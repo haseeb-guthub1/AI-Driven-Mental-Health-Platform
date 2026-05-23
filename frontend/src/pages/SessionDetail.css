@@ -1,0 +1,321 @@
+:root {
+  --primary: #3498A5;
+  --primary-dark: #2E7D8F;
+  --secondary: #6B9B8A;
+  --accent: #6C7ABD;
+  --success: #52A675;
+  --text-primary: #2C3E50;
+  --text-secondary: #5C6B7A;
+  --card-bg: #FFFFFF;
+  --border-color: #E4E9EF;
+  --shadow-sm: 0 1px 3px rgba(46, 125, 143, 0.08);
+  --shadow-md: 0 4px 12px rgba(46, 125, 143, 0.08);
+  --shadow-lg: 0 8px 24px rgba(46, 125, 143, 0.10);
+}
+
+.session-detail-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  animation: fadeIn 0.3s ease-in;
+  background-image: 
+    radial-gradient(circle at 20% 50%, rgba(52, 152, 165, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(107, 155, 138, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 40% 20%, rgba(108, 122, 189, 0.02) 0%, transparent 50%);
+  min-height: 100vh;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Header */
+.session-header {
+  margin-bottom: 2rem;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--card-bg);
+  border: 2px solid var(--primary);
+  border-radius: 12px;
+  color: var(--primary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.back-btn:hover {
+  background: var(--primary);
+  color: white;
+  transform: translateX(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.session-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: var(--text-primary);
+}
+
+.session-title svg {
+  color: var(--primary);
+}
+
+.session-title h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Info Grid */
+.session-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.info-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.info-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary);
+}
+
+.info-card svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.info-card.emotion-card {
+  border-width: 2px;
+}
+
+.info-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 0.25rem 0;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Summary Section */
+.summary-section,
+.transcript-section,
+.notes-section {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+}
+
+.summary-section:hover,
+.transcript-section:hover,
+.notes-section:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--primary);
+}
+
+.section-header svg {
+  color: var(--primary);
+}
+
+.section-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.summary-content,
+.notes-content {
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  line-height: 1.8;
+}
+
+.summary-content p,
+.notes-content p {
+  margin: 0;
+  text-align: justify;
+}
+
+/* Chat Transcript */
+.messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.message-bubble {
+  max-width: 85%;
+  padding: 1.5rem;
+  border-radius: 16px;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+}
+
+.message-bubble:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.message-bubble.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, rgba(52, 152, 165, 0.08) 0%, rgba(108, 122, 189, 0.08) 100%);
+  border: 2px solid var(--primary);
+  border-left: 4px solid var(--primary);
+  margin-left: auto;
+}
+
+.message-bubble.ai {
+  align-self: flex-start;
+  background: var(--card-bg);
+  border: 2px solid var(--secondary);
+  border-left: 4px solid var(--secondary);
+  margin-right: auto;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.message-header svg {
+  color: var(--primary);
+}
+
+.message-bubble.ai .message-header svg {
+  color: var(--secondary);
+}
+
+.message-author {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.message-bubble.ai .message-author {
+  color: var(--secondary);
+}
+
+.message-time {
+  margin-left: auto;
+  font-size: 0.75rem;
+}
+
+.message-text {
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Loading & Error States */
+.loading-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 1.5rem;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-state p,
+.error-state p {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .session-detail-container {
+    padding: 1rem;
+  }
+
+  .session-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .message-bubble {
+    max-width: 95%;
+  }
+
+  .session-title h1 {
+    font-size: 1.5rem;
+  }
+
+  .summary-section,
+  .transcript-section,
+  .notes-section {
+    padding: 1.5rem;
+  }
+}

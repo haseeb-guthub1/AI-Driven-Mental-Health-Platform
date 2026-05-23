@@ -1,0 +1,443 @@
+:root {
+  /* Professional Mental Health Theme */
+  --primary: #3498A5;
+  --primary-dark: #2E7D8F;
+  --secondary: #6B9B8A;
+  --accent: #6C7ABD;
+  --bg-main: #F8FAFB;
+  --sidebar-bg: #FFFFFF;
+  --card-bg: #FFFFFF;
+  --text-primary: #2C3E50;
+  --text-secondary: #5C6B7A;
+  --border-color: #E4E9EF;
+  --shadow-sm: 0 1px 3px rgba(46, 125, 143, 0.08);
+  --shadow-md: 0 4px 12px rgba(46, 125, 143, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.dashboard-wrapper {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background: var(--bg-main);
+  color: var(--text-primary);
+  position: relative;
+}
+
+/* Sidebar - Fixed Position */
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 280px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  padding: 30px 20px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.3s ease;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
+  padding: 15px;
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.logo-section:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.logo-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.close-menu-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  margin-left: auto;
+}
+
+.mobile-menu-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.close-menu-btn:hover, .mobile-menu-btn:hover {
+  background: var(--bg-main);
+  transform: scale(1.1);
+}
+
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(168, 216, 234, 0.2);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+}
+
+.nav-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-grow: 1;
+}
+
+.menu-label {
+  color: var(--text-muted, #8896A4);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 20px 0 10px 10px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.nav-item:hover {
+  background: var(--bg-main);
+  color: var(--text-primary);
+  transform: translateX(8px) translateZ(10px);
+  box-shadow: -3px 0 8px rgba(46, 125, 143, 0.1);
+}
+
+.nav-item.active {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 2px 8px rgba(52, 152, 165, 0.3);
+  transform: translateZ(5px);
+}
+
+.nav-item.active svg {
+  filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.3));
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.user-info-mini {
+  background: var(--bg-main);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.user-info-mini:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.user-email-text {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.logout-btn {
+  background: var(--danger);
+  border: none;
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  width: 100%;
+  box-shadow: var(--shadow-sm);
+  transform-style: preserve-3d;
+}
+
+.logout-btn:hover {
+  background: #D44242;
+  transform: translateY(-2px) rotateX(5deg);
+  box-shadow: 0 6px 16px rgba(231, 76, 76, 0.25);
+}
+
+/* Main Content - With left margin for fixed sidebar */
+.content {
+  flex-grow: 1;
+  margin-left: 280px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--bg-main);
+  width: calc(100% - 280px);
+}
+
+.top-bar {
+  padding: 22px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.welcome-text h2 {
+  font-size: 1.8rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.client-badge {
+  background: var(--primary);
+  color: white;
+}
+
+.coach-badge {
+  background: var(--secondary);
+  color: white;
+}
+
+.top-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.icon-btn {
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
+}
+
+.icon-btn:hover {
+  background: var(--card-bg);
+  transform: translateY(-3px) rotateX(10deg);
+  box-shadow: 0 4px 12px rgba(46, 125, 143, 0.15);
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  background: var(--primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1rem;
+  color: white;
+  box-shadow: 0 2px 8px rgba(52, 152, 165, 0.25);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.avatar:hover {
+  transform: scale(1.1) rotateY(15deg);
+  box-shadow: 0 4px 12px rgba(52, 152, 165, 0.35);
+}
+
+.page-container {
+  padding: 40px;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 240px;
+  }
+  
+  .content {
+    margin-left: 240px;
+    width: calc(100% - 240px);
+  }
+
+  .page-container {
+    padding: 30px;
+  }
+
+  .top-bar {
+    padding: 20px 30px;
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  .mobile-overlay {
+    display: block;
+  }
+
+  .close-menu-btn {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: -280px;
+    top: 0;
+    height: 100vh;
+    width: 280px;
+    z-index: 1000;
+    box-shadow: 4px 0 20px rgba(168, 216, 234, 0.3);
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  .content {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .top-bar {
+    padding: 15px 20px;
+    gap: 12px;
+  }
+
+  .welcome-text h2 {
+    font-size: 1.4rem;
+  }
+
+  .page-container {
+    padding: 20px;
+  }
+
+  .role-badge {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+  }
+
+  .top-bar-actions {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-bar {
+    flex-wrap: wrap;
+    padding: 12px 15px;
+  }
+
+  .welcome-text {
+    flex: 1;
+    min-width: 150px;
+  }
+
+  .welcome-text h2 {
+    font-size: 1.1rem;
+  }
+
+  .page-container {
+    padding: 15px;
+  }
+
+  .avatar {
+    width: 38px;
+    height: 38px;
+    font-size: 0.9rem;
+  }
+
+  .icon-btn {
+    padding: 8px;
+  }
+
+  .role-badge {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+  }
+}
