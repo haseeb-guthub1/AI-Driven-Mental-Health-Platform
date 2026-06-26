@@ -31,4 +31,14 @@ export const apiService = {
     
     getAvailableCoaches: () => 
         api.get('/api/ai-guidance/available-coaches/'),
+    
+    // APPOINTMENTS
+    bookAppointment: (data: {
+        coach_id: number;
+        client_id: number;
+        appointment_date: string;
+        duration_minutes: number;
+        status: string;
+    }) => 
+        api.post('/coach_client/appointments/', data),
 };

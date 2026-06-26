@@ -11,6 +11,7 @@ import CoachDashboard from './pages/CoachDashboard';
 import CoachApproval from './pages/CoachApproval';
 import SessionDetail from './pages/SessionDetail';
 import SelectCoach from './pages/SelectCoach';
+import SessionLogs from './pages/SessionLogs';
 
 
 function App() {
@@ -38,6 +39,7 @@ function App() {
           {/* Coach Specific Routes */}
           <Route path="patients" element={<Patients />} />
           <Route path="coach-overview" element={<CoachDashboard />} />
+          <Route path="session-logs" element={<SessionLogs />} />
           
           {/* Admin/Superuser Routes */}
           <Route path="coach-approval" element={<CoachApproval />} />

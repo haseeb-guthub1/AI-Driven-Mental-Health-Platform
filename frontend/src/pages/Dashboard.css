@@ -4,6 +4,7 @@
   --primary-dark: #2E7D8F;
   --secondary: #6B9B8A;
   --accent: #6C7ABD;
+  --danger: #E74C3C;
   --bg-main: #F8FAFB;
   --sidebar-bg: #FFFFFF;
   --card-bg: #FFFFFF;
@@ -279,21 +280,33 @@
 
 .icon-btn {
   background: var(--bg-main);
-  border: 1px solid var(--border-color);
+  border: 1.5px solid var(--border-color);
+  color: var(--text-secondary);
   padding: 10px;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  transform-style: preserve-3d;
+  position: relative;
+}
+
+.icon-btn svg {
+  color: var(--text-secondary);
+  display: block;
 }
 
 .icon-btn:hover {
-  background: var(--card-bg);
-  transform: translateY(-3px) rotateX(10deg);
-  box-shadow: 0 4px 12px rgba(46, 125, 143, 0.15);
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+  box-shadow: 0 4px 14px rgba(52, 152, 165, 0.35);
+  transform: translateY(-2px);
+}
+
+.icon-btn:hover svg {
+  color: white;
 }
 
 .user-profile {

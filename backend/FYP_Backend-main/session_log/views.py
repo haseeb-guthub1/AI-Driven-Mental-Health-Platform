@@ -146,41 +146,86 @@ def generate_session_summary(request, session_id):
         print(f"[Summary] Dominant emotion: {dominant_emotion} (intensity: {avg_intensity})")
         print(f"[Summary] Emotion distribution: {emotion_analysis['emotion_distribution']}")
         
-        # Generate summary using Gemini
-        print(f"[Summary] Calling Gemini API...")
-        genai.configure(api_key="AIzaSyB2l8l93A_rlyn6EaztI7nfZT9g9Mra28g", transport='rest')
-        model = genai.GenerativeModel('gemini-2.5-flash-lite')
-        
-        # Create emotion context for the summary
         emotion_context = f"""
         Emotional Analysis of Session:
         - Dominant Emotion: {dominant_emotion} (intensity: {avg_intensity}/10)
         - Total Messages: {emotion_analysis['total_messages']}
         - Emotion Distribution: {', '.join([f"{e}: {d['count']} times ({d['percentage']}%)" for e, d in emotion_analysis['emotion_distribution'].items()])}
         """
-        
-        summary_prompt = f"""
-        You are a professional mental health therapist. Analyze this conversation and provide a concise, professional summary.
-        
-        {emotion_context}
-        
-        Conversation:
-        {conversation_text}
-        
-        Please provide:
-        1. A brief summary of the main topics discussed (2-3 sentences)
-        2. Key concerns or issues identified
-        3. Progress or insights gained
-        4. Overall emotional state (considering that the dominant emotion throughout this session was {dominant_emotion})
-        5. Recommended follow-up actions
-        
-        Keep the summary professional, empathetic, and actionable. Format it in clear paragraphs.
-        """
-        
-        response = model.generate_content(summary_prompt)
-        summary = response.text
-        
-        print(f"[Summary] Generated summary ({len(summary)} chars)")
+
+        summary_prompt = f"""You are a professional mental health therapist. Analyze this conversation and provide a concise, professional summary.
+
+{emotion_context}
+
+Conversation:
+{conversation_text}
+
+Please provide:
+1. A brief summary of the main topics discussed (2-3 sentences)
+2. Key concerns or issues identified
+3. Progress or insights gained
+4. Overall emotional state (considering that the dominant emotion throughout this session was {dominant_emotion})
+5. Recommended follow-up actions
+
+Keep the summary professional, empathetic, and actionable. Format it in clear paragraphs."""
+
+        summary = None
+
+        # --- Attempt 1: Gemini ---
+        try:
+            print(f"[Summary] Trying Gemini API...")
+            genai.configure(api_key="YOUR_GEMINI_API_KEY", transport='rest')
+            gemini_model = genai.GenerativeModel('gemini-2.5-flash-lite')
+            gemini_response = gemini_model.generate_content(summary_prompt)
+            summary = gemini_response.text
+            print(f"[Summary] Gemini succeeded ({len(summary)} chars)")
+        except Exception as gemini_err:
+            print(f"[Summary] Gemini failed: {gemini_err}")
+
+        # --- Attempt 2: Ollama (local) ---
+        if not summary:
+            try:
+                print(f"[Summary] Trying Ollama...")
+                import requests as req
+                ollama_payload = {
+                    "model": "llama3.2:3b",
+                    "messages": [{"role": "user", "content": summary_prompt}],
+                    "stream": False,
+                    "options": {"temperature": 0.4}
+                }
+                ollama_resp = req.post("http://localhost:11434/api/chat", json=ollama_payload, timeout=60)
+                if ollama_resp.status_code == 200:
+                    summary = ollama_resp.json().get('message', {}).get('content', '').strip()
+                    if summary:
+                        print(f"[Summary] Ollama succeeded ({len(summary)} chars)")
+            except Exception as ollama_err:
+                print(f"[Summary] Ollama failed: {ollama_err}")
+
+        # --- Attempt 3: Rule-based fallback ---
+        if not summary:
+            print(f"[Summary] Using rule-based fallback summary")
+            dist_text = ', '.join([
+                f"{e} ({d['count']} times, {d['percentage']}%)"
+                for e, d in emotion_analysis['emotion_distribution'].items()
+            ])
+            critical = {'suicidal', 'self_harm', 'severe_depression', 'panic', 'crisis', 'grief'}
+            if dominant_emotion in critical:
+                follow_up = "Immediate follow-up is strongly recommended. Please consider reaching out to a licensed mental health professional or crisis support service."
+            elif avg_intensity >= 7:
+                follow_up = "A follow-up session within the next few days is recommended to monitor emotional wellbeing."
+            else:
+                follow_up = "Continue practising self-care and monitor your emotional state between sessions."
+
+            summary = (
+                f"Session Overview: This {conversations.count()}-message session captured an emotional journey predominantly characterised by {dominant_emotion} "
+                f"at an average intensity of {avg_intensity:.1f}/10.\n\n"
+                f"Emotional Pattern: Emotion distribution across the session — {dist_text}.\n\n"
+                f"Emotional State: The dominant emotion of {dominant_emotion} at intensity {avg_intensity:.1f}/10 "
+                f"{'indicates significant distress requiring attention.' if avg_intensity >= 7 else 'suggests moderate emotional engagement.'}\n\n"
+                f"Follow-up: {follow_up}"
+            )
+
+        print(f"[Summary] Final summary ready ({len(summary)} chars)")
         
         # Update session with summary and dominant emotion (aggregated from all messages)
         session.summary = summary

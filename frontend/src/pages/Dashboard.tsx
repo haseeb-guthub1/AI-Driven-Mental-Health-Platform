@@ -91,10 +91,13 @@ const DashboardLayout: React.FC = () => {
 
                 <nav className="nav-menu">
                     <p className="menu-label">Main Menu</p>
-                    <NavLink to="/dashboard" end className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>
-                        <Home size={20} /> Overview
-                    </NavLink>
-                    
+                    {/* Overview only for clients — coaches are redirected to Coach Dashboard */}
+                    {!isCoach && (
+                        <NavLink to="/dashboard" end className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>
+                            <Home size={20} /> Overview
+                        </NavLink>
+                    )}
+
                     {/* CLIENT SPECIFIC NAVIGATION */}
                     {isClient && (
                         <>
@@ -168,7 +171,7 @@ const DashboardLayout: React.FC = () => {
                     </div>
                     
                     <div className="top-bar-actions">
-                        <button className="icon-btn" title="Notifications">
+                        <button className="icon-btn" title="Notifications" onClick={() => navigate('/dashboard/notifications')} style={{ position: 'relative' }}>
                             <Bell size={20} />
                         </button>
                         <div className="user-profile">

@@ -90,7 +90,6 @@
     transform: translateX(6px) translateY(-2px) rotateY(2deg);
     box-shadow: 0 6px 20px rgba(52, 152, 165, 0.15);
 }
-}
 
 .notification-card.unread {
     background: linear-gradient(to right, #f0f9ff, white);
@@ -156,6 +155,33 @@
     border-radius: 12px;
     font-size: 0.8rem;
     font-weight: 600;
+}
+
+.severity-tag {
+    padding: 0.2rem 0.65rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.severity-tag.critical {
+    background: #FEF2F2;
+    color: #DC2626;
+    border: 1px solid #FECACA;
+}
+
+.severity-tag.high {
+    background: #FFF7ED;
+    color: #EA580C;
+    border: 1px solid #FED7AA;
+}
+
+.severity-tag.moderate {
+    background: #FEFCE8;
+    color: #CA8A04;
+    border: 1px solid #FDE68A;
 }
 
 .delete-btn {

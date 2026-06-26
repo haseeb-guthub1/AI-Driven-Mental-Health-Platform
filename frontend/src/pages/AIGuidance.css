@@ -4,6 +4,7 @@
   --secondary: #6B9B8A;
   --accent: #6C7ABD;
   --success: #52A675;
+  --danger: #E74C3C;
   --text-primary: #2C3E50;
   --text-secondary: #5C6B7A;
   --card-bg: #FFFFFF;
@@ -206,21 +207,29 @@
     background: var(--primary);
     color: white;
     border: none;
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     border-radius: 10px;
     display: grid;
     place-items: center;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(52, 152, 165, 0.3);
 }
 
 .send-btn:hover:not(:disabled) {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(168, 216, 234, 0.4);
+    background: var(--primary-dark);
+    transform: scale(1.06);
+    box-shadow: 0 4px 16px rgba(52, 152, 165, 0.45);
 }
 
-.send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.send-btn:disabled {
+    background: var(--border-color);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+    box-shadow: none;
+}
 
 .disclaimer {
     text-align: center;
@@ -271,21 +280,23 @@
 
 /* Voice Button Styling */
 .voice-btn {
-    background: white;
-    border: 2px solid var(--border-color);
-    color: var(--text-primary);
-    width: 40px;
-    height: 40px;
+    background: rgba(52, 152, 165, 0.08);
+    border: 2px solid var(--primary);
+    color: var(--primary);
+    width: 42px;
+    height: 42px;
     border-radius: 10px;
     display: grid;
     place-items: center;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
+    flex-shrink: 0;
 }
 
 .voice-btn:hover {
-    background: rgba(107, 155, 138, 0.1);
-    border-color: var(--primary);
+    background: rgba(52, 152, 165, 0.18);
+    box-shadow: 0 4px 12px rgba(52, 152, 165, 0.25);
+    transform: scale(1.06);
 }
 
 .voice-btn.active {
@@ -310,7 +321,7 @@
 }
 
 .end-session-btn {
-    background: var(--danger);
+    background: #E74C3C;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -321,13 +332,14 @@
     gap: 8px;
     font-weight: 600;
     font-size: 0.9rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(170, 150, 218, 0.3);
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
 }
 
 .end-session-btn:hover:not(:disabled) {
+    background: #C0392B;
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(170, 150, 218, 0.4);
+    box-shadow: 0 6px 18px rgba(231, 76, 60, 0.4);
 }
 
 .end-session-btn:disabled {

@@ -37,8 +37,8 @@ export const getCurrentUser = () => {
     }
 };
 
-// 4. LOGOUT: Cleans up and redirects
+// 4. LOGOUT: Clears only the session — app data (appointments etc.) is preserved
 export const logout = () => {
-    localStorage.clear(); // Clears everything to be safe
-    window.location.href = '/'; 
+    localStorage.removeItem('user');
+    window.location.href = '/';
 };

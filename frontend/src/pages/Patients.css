@@ -62,10 +62,16 @@
     box-shadow: 0 2px 8px rgba(52, 152, 165, 0.25);
 }
 
-.icon-box.red { 
+.icon-box.red {
     background: var(--danger);
     color: white;
     box-shadow: 0 2px 8px rgba(231, 76, 76, 0.25);
+}
+
+.icon-box.green {
+    background: #059669;
+    color: white;
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
 }
 
 .stat-info h3 { 

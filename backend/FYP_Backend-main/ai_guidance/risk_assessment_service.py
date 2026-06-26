@@ -16,22 +16,86 @@ class RiskAssessmentService:
     HIGH_RISK_THRESHOLD = 65  # Percentage (0-100)
     HISTORICAL_LOOKBACK_DAYS = 90  # 3 months
     
+    # Broad sets – include all common synonyms stored by the AI emotion detector
+    CRITICAL_EMOTIONS = {
+        'suicidal', 'self_harm', 'severe_depression', 'panic', 'crisis', 'grief',
+        'hopeless', 'hopelessness', 'despair', 'breakdown',
+    }
+    HIGH_EMOTIONS = {
+        'anxiety', 'anxious', 'fear', 'fearful', 'scared',
+        'anger', 'angry', 'rage', 'furious',
+        'sadness', 'sad', 'depressed', 'depression',
+        'overwhelmed', 'overwhelm', 'stressed', 'stress',
+        'frustrated', 'frustration', 'helpless',
+        'disappointment', 'disappointed',
+        'nervousness', 'nervous', 'worried', 'worry',
+        'shame', 'guilt', 'loneliness', 'lonely',
+    }
+
+    @staticmethod
+    def _score_from_emotions(emotions):
+        """Compute a 0-100 risk score from a queryset/list of emotion_data records."""
+        if not emotions:
+            return 0
+
+        max_intensity = 0
+        has_critical = False
+        has_high = False
+        total_intensity = 0
+        count = 0
+
+        for e in emotions:
+            intensity = e.intensity or 5
+            max_intensity = max(max_intensity, intensity)
+            total_intensity += intensity
+            count += 1
+            name = (e.emotion or '').lower().strip()
+            if name in RiskAssessmentService.CRITICAL_EMOTIONS:
+                has_critical = True
+            elif name in RiskAssessmentService.HIGH_EMOTIONS:
+                has_high = True
+
+        avg_intensity = total_intensity / count if count else 0
+
+        if has_critical and max_intensity >= 7:
+            return 90
+        if has_critical:
+            return 75
+        if has_high and max_intensity >= 8:
+            return 72   # > 65 → is_high_risk_now = True
+        if has_high and max_intensity >= 6:
+            return 58
+        if has_high:
+            return 42
+        # Intensity-only fallback (covers any negative emotion at high intensity)
+        if max_intensity >= 9:
+            return 68
+        if max_intensity >= 7:
+            return 50
+        if avg_intensity >= 7:
+            return 45
+        return 25
+
     @staticmethod
     def calculate_risk_score(session):
-        """Calculate risk score for a session (0-100)"""
-        risk_mapping = {
-            'critical': 90,
-            'high': 75,
-            'moderate': 50,
-            'medium': 50,
-            'low': 20,
-        }
-        
+        """Calculate risk score for a session (0-100)."""
+        risk_mapping = {'critical': 90, 'high': 75, 'moderate': 50, 'medium': 50, 'low': 20}
+
         if session.highest_risk_score:
             return session.highest_risk_score
-        
-        risk_level = session.risk_level or 'low'
-        return risk_mapping.get(risk_level.lower(), 20)
+
+        if session.risk_level:
+            return risk_mapping.get(session.risk_level.lower(), 20)
+
+        # Derive risk from emotion_data when session risk fields are unpopulated
+        try:
+            from emotion_data.models import emotion_data as EmotionData
+            emotions = list(EmotionData.objects.filter(session_id_id=session.session_id))
+            if not emotions:
+                emotions = list(EmotionData.objects.filter(client_id_id=session.client_id_id))
+            return RiskAssessmentService._score_from_emotions(emotions) or 20
+        except Exception:
+            return 20
     
     @staticmethod
     def get_historical_risk_data(client_id, days=90):
@@ -121,29 +185,54 @@ class RiskAssessmentService:
         """
         # Check if coach already assigned
         has_coach, coach_id = RiskAssessmentService.is_coach_assigned(client_id)
-        
+
         if has_coach:
+            # Still compute risk so the frontend can show the banner even with a coach assigned
+            try:
+                from emotion_data.models import emotion_data as EmotionData
+                emotions = list(EmotionData.objects.filter(client_id_id=client_id))
+                coach_risk_score = RiskAssessmentService._score_from_emotions(emotions) or 0
+            except Exception:
+                coach_risk_score = 0
             return {
                 'is_locked': False,
                 'reason': 'coach_already_assigned',
                 'has_coach': True,
                 'coach_id': coach_id,
-                'current_risk_score': None,
-                'historical_data': None
+                'current_risk_score': coach_risk_score,
+                'threshold': RiskAssessmentService.HIGH_RISK_THRESHOLD,
+                'historical_data': None,
             }
         
-        # Get most recent session
-        latest_session = session_log.objects.filter(
+        # Get most recent session that has emotion records (skip empty sessions)
+        from emotion_data.models import emotion_data as EmotionData
+        sessions_with_data = session_log.objects.filter(
             client_id=client_id
-        ).order_by('-date').first()
+        ).order_by('-date')
+
+        latest_session = None
+        for s in sessions_with_data:
+            if EmotionData.objects.filter(session_id_id=s.session_id).exists():
+                latest_session = s
+                break
+        if latest_session is None:
+            latest_session = sessions_with_data.first()
         
         if not latest_session:
+            # No sessions yet — try scoring from raw emotion_data
+            try:
+                from emotion_data.models import emotion_data as EmotionData
+                emotions = list(EmotionData.objects.filter(client_id_id=client_id))
+                direct_score = RiskAssessmentService._score_from_emotions(emotions)
+            except Exception:
+                direct_score = 0
             return {
                 'is_locked': False,
                 'reason': 'no_sessions',
                 'has_coach': False,
-                'current_risk_score': None,
-                'historical_data': None
+                'current_risk_score': direct_score,
+                'threshold': RiskAssessmentService.HIGH_RISK_THRESHOLD,
+                'historical_data': None,
             }
         
         # Calculate current risk score

@@ -314,8 +314,34 @@ const AIGuidance: React.FC = () => {
                 timestamp: new Date() 
             }]);
         } catch (err) {
-            // console.error("Failed to generate summary:", err);
-            alert("Summary already generated or session ended.");
+            // Fetch session data and show modal even if AI summary generation failed
+            try {
+                const getResponse = await axios.get(
+                    `http://127.0.0.1:8000/api/sessions/${sessionId}/`
+                );
+                const session = getResponse.data;
+                setSessionSummary({
+                    session_id: session.session_id,
+                    summary: session.summary || '',
+                    final_emotion: session.final_emotion || 'neutral',
+                    emotion_intensity: session.emotion_intensity || 0,
+                    message_count: session.message_count || 0,
+                    session_date: session.date,
+                });
+                setShowSummary(true);
+                if (user?.id) {
+                    localStorage.removeItem(`activeSession_${user.id}`);
+                }
+                setSessionId(null);
+                setMessages([{
+                    id: 1,
+                    text: "Session ended. Start a new conversation when you're ready.",
+                    sender: 'ai',
+                    timestamp: new Date()
+                }]);
+            } catch {
+                alert("Failed to end session. Please try again.");
+            }
         } finally {
             setIsGeneratingSummary(false);
         }
@@ -364,11 +390,6 @@ const AIGuidance: React.FC = () => {
                                 <div className="emotion-badge">
                                     <Sparkles size={12} />
                                     <span>{msg.emotion}</span>
-                                    {msg.emotionConfidence && (
-                                        <span className="confidence">
-                                            {(msg.emotionConfidence * 100).toFixed(0)}%
-                                        </span>
-                                    )}
                                 </div>
                             )}
                             <span className="time">{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -444,7 +465,13 @@ const AIGuidance: React.FC = () => {
 
                         <div className="summary-text">
                             <h3>Conversation Summary:</h3>
-                            <p>{sessionSummary.summary}</p>
+                            {sessionSummary.summary ? (
+                                <p>{sessionSummary.summary}</p>
+                            ) : (
+                                <p style={{ color: '#9ca3af', fontStyle: 'italic' }}>
+                                    AI summary generation is unavailable right now. Your session has been saved — view full details in Session Logs.
+                                </p>
+                            )}
                         </div>
 
                         {/* Emotion Distribution */}

@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { AlertCircle, Activity, TrendingUp, Brain } from 'lucide-react';
+import { AlertCircle, Activity, TrendingUp, Brain, FileText, MessageSquare, X } from 'lucide-react';
 import axios from 'axios';
 import { getCurrentUser } from '../services/authService';
+import { useNavigate } from 'react-router-dom';
 import './MoodTracker.css';
+
+interface SessionSummary {
+    session_id: number;
+    summary: string;
+    final_emotion: string;
+    emotion_intensity: number;
+    message_count: number;
+    date: string;
+}
 
 interface EmotionData {
     emotion_id: number;
@@ -31,6 +41,7 @@ interface EmotionStats {
 }
 
 const MoodTracker: React.FC = () => {
+    const navigate = useNavigate();
     const [emotionData, setEmotionData] = useState<EmotionData[]>([]);
     const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
     const [emotionDistribution, setEmotionDistribution] = useState<any[]>([]);
@@ -40,6 +51,8 @@ const MoodTracker: React.FC = () => {
     const [chartType, setChartType] = useState<'area' | 'bar' | 'line'>('line');
     const [timeRange, setTimeRange] = useState<'all' | 'week' | 'month'>('all');
     const [clientId, setClientId] = useState<number | null>(null);
+    const [sessionSummaries, setSessionSummaries] = useState<SessionSummary[]>([]);
+    const [expandedSummary, setExpandedSummary] = useState<SessionSummary | null>(null);
 
     useEffect(() => {
         const user = getCurrentUser();
@@ -57,8 +70,20 @@ const MoodTracker: React.FC = () => {
     useEffect(() => {
         if (clientId) {
             fetchMoods();
+            fetchSessionSummaries();
         }
     }, [clientId, timeRange]);
+
+    const fetchSessionSummaries = async () => {
+        if (!clientId) return;
+        try {
+            const res = await axios.get(`http://127.0.0.1:8000/api/sessions/?client_id=${clientId}`);
+            const withSummary = res.data.filter((s: any) => s.summary);
+            setSessionSummaries(withSummary.slice(0, 5));
+        } catch {
+            // silently ignore
+        }
+    };
 
     const fetchMoods = async () => {
         try {
@@ -127,11 +152,24 @@ const MoodTracker: React.FC = () => {
                     return risk === 'high' || risk === 'critical';
                 }).length;
                 
-                // Calculate trend (comparing first half vs second half)
+                // Calculate trend: lower intensity over time = Improving for mental health
                 const midpoint = Math.floor(filteredData.length / 2);
-                const firstHalfAvg = filteredData.slice(0, midpoint).reduce((sum, item) => sum + item.intensity, 0) / midpoint;
-                const secondHalfAvg = filteredData.slice(midpoint).reduce((sum, item) => sum + item.intensity, 0) / (filteredData.length - midpoint);
-                const trend = secondHalfAvg > firstHalfAvg + 1 ? 'Improving' : secondHalfAvg < firstHalfAvg - 1 ? 'Declining' : 'Stable';
+                const firstHalfAvg = filteredData.slice(0, midpoint).reduce((sum, item) => sum + item.intensity, 0) / (midpoint || 1);
+                const secondHalfAvg = filteredData.slice(midpoint).reduce((sum, item) => sum + item.intensity, 0) / ((filteredData.length - midpoint) || 1);
+                const highRiskRatio = filteredData.filter(item => {
+                    const risk = extractRiskLevel(item.notes, item.intensity);
+                    return risk === 'high' || risk === 'critical';
+                }).length / (filteredData.length || 1);
+                let trend: string;
+                if (highRiskRatio >= 0.5) {
+                    trend = 'High Risk';
+                } else if (secondHalfAvg < firstHalfAvg - 1) {
+                    trend = 'Improving';
+                } else if (secondHalfAvg > firstHalfAvg + 1) {
+                    trend = 'Worsening';
+                } else {
+                    trend = 'Stable';
+                }
                 
                 setStatistics({
                     totalLogs: filteredData.length,
@@ -320,8 +358,14 @@ const MoodTracker: React.FC = () => {
                     <p>Tracking emotions detected from your AI Guidance conversations.</p>
                 </div>
                 {statistics && (
-                    <div className="risk-indicator-chip">
-                        <TrendingUp size={16} /> 
+                    <div className="risk-indicator-chip" style={{
+                        background: statistics.recentTrend === 'Improving' ? '#dcfce7' :
+                                    statistics.recentTrend === 'Stable' ? '#fef9c3' : '#fee2e2',
+                        color: statistics.recentTrend === 'Improving' ? '#16a34a' :
+                               statistics.recentTrend === 'Stable' ? '#ca8a04' : '#dc2626',
+                        border: `1.5px solid ${statistics.recentTrend === 'Improving' ? '#86efac' : statistics.recentTrend === 'Stable' ? '#fde047' : '#fca5a5'}`
+                    }}>
+                        <TrendingUp size={16} />
                         <span>Trend: <strong>{statistics.recentTrend}</strong></span>
                     </div>
                 )}
@@ -504,6 +548,134 @@ const MoodTracker: React.FC = () => {
                 )}
             </div>
             
+            {/* Session Summaries */}
+            {sessionSummaries.length > 0 && (
+                <section className="recent-emotions-section">
+                    <h3><FileText size={18} style={{ display: 'inline', marginRight: 6 }} />Session Summaries</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+                        {sessionSummaries.map((session) => (
+                            <motion.div
+                                key={session.session_id}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                onClick={() => setExpandedSummary(session)}
+                                style={{
+                                    background: '#fff',
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: 12,
+                                    padding: '14px 16px',
+                                    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                                    cursor: 'pointer',
+                                    transition: 'box-shadow 0.2s, border-color 0.2s'
+                                }}
+                                whileHover={{ boxShadow: '0 4px 16px rgba(99,102,241,0.15)', borderColor: '#6366f1' }}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                                    <MessageSquare size={14} color="#6366f1" />
+                                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#374151' }}>
+                                        Session {session.session_id}
+                                    </span>
+                                    <span style={{ fontSize: '0.78rem', color: '#9ca3af' }}>
+                                        {new Date(session.date).toLocaleDateString()}
+                                    </span>
+                                    <span style={{
+                                        fontSize: '0.75rem', fontWeight: 600,
+                                        background: getEmotionColor(session.final_emotion) + '22',
+                                        color: getEmotionColor(session.final_emotion),
+                                        borderRadius: 6, padding: '2px 8px'
+                                    }}>
+                                        {session.final_emotion} · {session.emotion_intensity}/10
+                                    </span>
+                                    <span style={{ fontSize: '0.75rem', color: '#9ca3af', marginLeft: 'auto' }}>
+                                        {session.message_count} msgs
+                                    </span>
+                                </div>
+                                <p style={{ fontSize: '0.83rem', color: '#4b5563', margin: 0, lineHeight: 1.55 }}>
+                                    {session.summary.substring(0, 220)}{session.summary.length > 220 ? '…' : ''}
+                                </p>
+                                <span style={{ fontSize: '0.75rem', color: '#6366f1', marginTop: 6, display: 'block' }}>
+                                    Click to read full summary →
+                                </span>
+                            </motion.div>
+                        ))}
+                    </div>
+                </section>
+            )}
+
+            {/* Full Summary Modal */}
+            {expandedSummary && (
+                <div
+                    onClick={() => setExpandedSummary(null)}
+                    style={{
+                        position: 'fixed', inset: 0, zIndex: 9999,
+                        background: 'rgba(0,0,0,0.55)', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center', padding: 16
+                    }}
+                >
+                    <motion.div
+                        onClick={e => e.stopPropagation()}
+                        initial={{ scale: 0.85, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        style={{
+                            background: '#fff', borderRadius: 16, padding: 28,
+                            maxWidth: 680, width: '100%', maxHeight: '85vh',
+                            overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.25)'
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <FileText size={22} color="#6366f1" />
+                                <div>
+                                    <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#111827' }}>
+                                        Session {expandedSummary.session_id} Summary
+                                    </h3>
+                                    <span style={{ fontSize: '0.78rem', color: '#9ca3af' }}>
+                                        {new Date(expandedSummary.date).toLocaleDateString()} · {expandedSummary.message_count} messages
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setExpandedSummary(null)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280' }}
+                            >
+                                <X size={22} />
+                            </button>
+                        </div>
+                        <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+                            <span style={{
+                                fontSize: '0.8rem', fontWeight: 600,
+                                background: getEmotionColor(expandedSummary.final_emotion) + '22',
+                                color: getEmotionColor(expandedSummary.final_emotion),
+                                borderRadius: 8, padding: '4px 12px'
+                            }}>
+                                {expandedSummary.final_emotion}
+                            </span>
+                            <span style={{
+                                fontSize: '0.8rem', fontWeight: 600,
+                                background: '#f3f4f6', color: '#374151',
+                                borderRadius: 8, padding: '4px 12px'
+                            }}>
+                                Intensity: {expandedSummary.emotion_intensity}/10
+                            </span>
+                        </div>
+                        <p style={{ fontSize: '0.9rem', color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-wrap', margin: 0 }}>
+                            {expandedSummary.summary}
+                        </p>
+                        <button
+                            onClick={() => { setExpandedSummary(null); navigate(`/dashboard/session/${expandedSummary.session_id}`); }}
+                            style={{
+                                marginTop: 20, padding: '10px 20px',
+                                background: 'linear-gradient(135deg,#6366f1,#7c3aed)',
+                                color: '#fff', border: 'none', borderRadius: 10,
+                                cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem'
+                            }}
+                        >
+                            View Full Session Details →
+                        </button>
+                    </motion.div>
+                </div>
+            )}
+
             {/* Recent Emotions List */}
             {emotionData.length > 0 && (
                 <section className="recent-emotions-section">

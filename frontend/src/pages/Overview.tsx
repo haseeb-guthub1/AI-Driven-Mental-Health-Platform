@@ -75,6 +75,14 @@ const Overview: React.FC = () => {
   // NEW: Coach Appointment Modal state
   const [showCoachModal, setShowCoachModal] = useState(false);
 
+  // Redirect coaches to their own dashboard
+  useEffect(() => {
+    const userRole = user?.role?.toLowerCase();
+    if (userRole === 'coach') {
+      navigate('/dashboard/coach-overview');
+    }
+  }, [user?.role, navigate]);
+
   // Refresh data when component mounts or when navigating back to this page
   useEffect(() => {
     fetchOverviewData();
