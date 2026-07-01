@@ -164,7 +164,7 @@ const DashboardLayout: React.FC = () => {
                     </button>
                     
                     <div className="welcome-text">
-                        <h2>Welcome back, {user.name}</h2>
+                        <h2>Welcome, {user.name}</h2>
                         <span className={`role-badge ${isCoach ? 'coach-badge' : 'client-badge'}`}>
                             {isCoach ? 'Clinical Portal' : 'Personal Sanctuary'}
                         </span>

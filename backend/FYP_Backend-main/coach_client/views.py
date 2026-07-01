@@ -1,4 +1,5 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
@@ -39,6 +40,7 @@ def coachclient_detail(request, pk):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def available_coaches(request):
     """Get all approved coaches"""
     coaches = human_coach.objects.filter(is_approved=True)
@@ -47,6 +49,7 @@ def available_coaches(request):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def book_appointment(request):
     """Book an appointment with a coach"""
     serializer = AppointmentSerializer(data=request.data)

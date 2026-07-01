@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getCurrentUser } from '../services/authService';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     History, Calendar, MessageSquare, Activity,
@@ -148,17 +149,23 @@ const MOCK_SESSIONS: SessionLog[] = [
 ];
 
 const SessionLogs: React.FC = () => {
+    const currentUser = getCurrentUser();
+    // Show dummy data only for the 4 built-in demo coaches (Sara Khan, Hassan Mirza, Amna Rauf, Zain Ali)
+    const DEMO_COACH_IDS = [18, 19, 20, 21];
+    const isDemoCoach = DEMO_COACH_IDS.includes(currentUser?.coach_id);
+    const sessions = isDemoCoach ? MOCK_SESSIONS : [];
+
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'cancelled' | 'pending'>('all');
     const [selectedSession, setSelectedSession] = useState<SessionLog | null>(null);
 
-    const filteredSessions = MOCK_SESSIONS.filter(s => {
+    const filteredSessions = sessions.filter(s => {
         const matchesSearch = s.client_name.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === 'all' || s.status === filterStatus;
         return matchesSearch && matchesStatus;
     });
 
-    const completed = MOCK_SESSIONS.filter(s => s.status === 'completed');
+    const completed = sessions.filter(s => s.status === 'completed');
     const stats = {
         total: completed.length,
         thisWeek: completed.filter(s => {
@@ -262,8 +269,8 @@ const SessionLogs: React.FC = () => {
                             onClick={() => setFilterStatus(f)}
                         >
                             {f.charAt(0).toUpperCase() + f.slice(1)}
-                            {f === 'all' && <span className="sl-tab-count">{MOCK_SESSIONS.length}</span>}
-                            {f !== 'all' && <span className="sl-tab-count">{MOCK_SESSIONS.filter(s => s.status === f).length}</span>}
+                            {f === 'all' && <span className="sl-tab-count">{sessions.length}</span>}
+                            {f !== 'all' && <span className="sl-tab-count">{sessions.filter(s => s.status === f).length}</span>}
                         </button>
                     ))}
                 </div>

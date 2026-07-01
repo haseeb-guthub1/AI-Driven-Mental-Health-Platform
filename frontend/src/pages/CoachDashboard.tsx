@@ -74,28 +74,30 @@ const CoachDashboard: React.FC = () => {
         fetchCoachData();
     }, []);
 
+    const DEMO_COACH_IDS = [18, 19, 20, 21];
+    const isDemoCoach = DEMO_COACH_IDS.includes(user?.coach_id);
+
     const fetchCoachData = async () => {
         try {
             setLoading(true);
 
-            // Load appointments from localStorage (saved when clients book via the modal)
+            // Load appointments from localStorage, filtered to this coach only
             const stored = JSON.parse(localStorage.getItem('mindwell_appointments') || '[]') as BookedAppointment[];
-            const pending = stored.filter(a => a.status === 'pending');
+            const pending = stored.filter(a => a.status === 'pending' && a.coachId === user?.coach_id);
             setPendingAppointments(pending);
 
-            setStats({
-                totalClients: 12,
-                activeSessions: 5,
-                pendingReviews: pending.length,
-                weeklyGrowth: 15
-            });
-
-            setRecentActivities([
-                { id: 1, client_name: 'John D.', activity: 'Completed session', time: '2 hours ago', emotion: 'anxious' },
-                { id: 2, client_name: 'Sarah M.', activity: 'New message', time: '4 hours ago', emotion: 'sad' },
-                { id: 3, client_name: 'Mike R.', activity: 'Session scheduled', time: '1 day ago' },
-                { id: 4, client_name: 'Emily K.', activity: 'Progress milestone', time: '2 days ago', emotion: 'joy' }
-            ]);
+            if (isDemoCoach) {
+                setStats({ totalClients: 12, activeSessions: 5, pendingReviews: pending.length, weeklyGrowth: 15 });
+                setRecentActivities([
+                    { id: 1, client_name: 'John D.', activity: 'Completed session', time: '2 hours ago', emotion: 'anxious' },
+                    { id: 2, client_name: 'Sarah M.', activity: 'New message', time: '4 hours ago', emotion: 'sad' },
+                    { id: 3, client_name: 'Mike R.', activity: 'Session scheduled', time: '1 day ago' },
+                    { id: 4, client_name: 'Emily K.', activity: 'Progress milestone', time: '2 days ago', emotion: 'joy' },
+                ]);
+            } else {
+                setStats({ totalClients: 0, activeSessions: 0, pendingReviews: pending.length, weeklyGrowth: 0 });
+                setRecentActivities([]);
+            }
         } catch (error) {
             console.error('Error fetching coach data:', error);
         } finally {
@@ -349,6 +351,11 @@ const CoachDashboard: React.FC = () => {
                         <Clock size={20} />
                     </div>
                     <div className="activity-list">
+                        {recentActivities.length === 0 && (
+                            <div style={{ textAlign: 'center', padding: '32px 0', color: '#9CA3AF', fontSize: '0.9rem' }}>
+                                No recent activity yet.
+                            </div>
+                        )}
                         {recentActivities.map((activity, index) => (
                             <motion.div
                                 key={activity.id}
@@ -418,30 +425,29 @@ const CoachDashboard: React.FC = () => {
                         <Calendar size={20} />
                     </div>
                     <div className="schedule-list">
-                        <div className="schedule-item">
-                            <div className="schedule-time">10:00 AM</div>
-                            <div className="schedule-content">
-                                <h4>Session with John D.</h4>
-                                <p>Follow-up on anxiety management</p>
+                        {isDemoCoach ? (
+                            <>
+                                <div className="schedule-item">
+                                    <div className="schedule-time">10:00 AM</div>
+                                    <div className="schedule-content"><h4>Session with John D.</h4><p>Follow-up on anxiety management</p></div>
+                                    <CheckCircle size={20} className="schedule-status complete" />
+                                </div>
+                                <div className="schedule-item">
+                                    <div className="schedule-time">2:00 PM</div>
+                                    <div className="schedule-content"><h4>Session with Sarah M.</h4><p>Initial consultation</p></div>
+                                    <AlertCircle size={20} className="schedule-status pending" />
+                                </div>
+                                <div className="schedule-item">
+                                    <div className="schedule-time">4:30 PM</div>
+                                    <div className="schedule-content"><h4>Team Meeting</h4><p>Weekly review with clinical staff</p></div>
+                                    <Clock size={20} className="schedule-status upcoming" />
+                                </div>
+                            </>
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: '32px 0', color: '#9CA3AF', fontSize: '0.9rem' }}>
+                                No sessions scheduled for today.
                             </div>
-                            <CheckCircle size={20} className="schedule-status complete" />
-                        </div>
-                        <div className="schedule-item">
-                            <div className="schedule-time">2:00 PM</div>
-                            <div className="schedule-content">
-                                <h4>Session with Sarah M.</h4>
-                                <p>Initial consultation</p>
-                            </div>
-                            <AlertCircle size={20} className="schedule-status pending" />
-                        </div>
-                        <div className="schedule-item">
-                            <div className="schedule-time">4:30 PM</div>
-                            <div className="schedule-content">
-                                <h4>Team Meeting</h4>
-                                <p>Weekly review with clinical staff</p>
-                            </div>
-                            <Clock size={20} className="schedule-status upcoming" />
-                        </div>
+                        )}
                     </div>
                 </motion.div>
             </div>
@@ -498,15 +504,13 @@ const CoachDashboard: React.FC = () => {
                                     <>
                                         <div>
                                             <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Client Name</label>
-                                            <select value={scheduleClient} onChange={e => setScheduleClient(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #D1D5DB', borderRadius: 9, fontSize: '0.9rem', color: '#1E1B4B', outline: 'none', background: '#FAFAFA' }}>
-                                                <option value="">— Select a client —</option>
-                                                <option value="Nadia Shah">Nadia Shah (Critical)</option>
-                                                <option value="Marcus Wright">Marcus Wright (High Risk)</option>
-                                                <option value="Sara Malik">Sara Malik (High Risk)</option>
-                                                <option value="Alice Thompson">Alice Thompson</option>
-                                                <option value="Hana Lee">Hana Lee</option>
-                                                <option value="David Chen">David Chen</option>
-                                            </select>
+                                            <input
+                                                type="text"
+                                                value={scheduleClient}
+                                                onChange={e => setScheduleClient(e.target.value)}
+                                                placeholder="Enter client name"
+                                                style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #D1D5DB', borderRadius: 9, fontSize: '0.9rem', color: '#1E1B4B', outline: 'none', background: '#FAFAFA', boxSizing: 'border-box' as const }}
+                                            />
                                         </div>
                                         <div>
                                             <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Date</label>

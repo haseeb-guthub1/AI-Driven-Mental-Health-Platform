@@ -25,19 +25,32 @@ def user_list_create(request):
             # Save the new user
             new_user = serializer.save()
             
-            # AUTO-CREATE CLIENT PROFILE for new user
-            from client.models import client
-            try:
-                client_profile = client.objects.create(
-                    user_id=new_user,
-                    name=new_user.name or f"User{new_user.user_id}",
-                    age=25,  # Default age
-                    gender='Not specified',
-                    email=new_user.email
-                )
-                print(f"[Signup] Auto-created client profile for user {new_user.user_id}: client_id={client_profile.client_id}")
-            except Exception as e:
-                print(f"[Signup ERROR] Failed to create client profile: {e}")
+            # AUTO-CREATE profile based on role
+            if new_user.role and new_user.role.lower() == 'coach':
+                from human_coach.models import human_coach
+                try:
+                    human_coach.objects.create(
+                        user_id=new_user,
+                        full_name=new_user.name or f"Coach{new_user.user_id}",
+                        specialization=request.data.get('specialization', 'Not specified'),
+                        license_id=request.data.get('license_id') or None,
+                    )
+                    print(f"[Signup] Auto-created coach profile for user {new_user.user_id}")
+                except Exception as e:
+                    print(f"[Signup ERROR] Failed to create coach profile: {e}")
+            else:
+                from client.models import client
+                try:
+                    client_profile = client.objects.create(
+                        user_id=new_user,
+                        name=new_user.name or f"User{new_user.user_id}",
+                        age=25,
+                        gender='Not specified',
+                        email=new_user.email
+                    )
+                    print(f"[Signup] Auto-created client profile for user {new_user.user_id}: client_id={client_profile.client_id}")
+                except Exception as e:
+                    print(f"[Signup ERROR] Failed to create client profile: {e}")
             
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         
@@ -68,35 +81,45 @@ def user_login(request):
             serializer = UserSerializer(user)
             user_data = serializer.data
             
-            # Check if this user has a client profile
-            from client.models import client
-            try:
-                # Look for client by user_id, not client_id
-                client_profile = client.objects.get(user_id=user.user_id)
-                user_data['id'] = client_profile.client_id  # Add client_id as 'id' for frontend
-                user_data['client_id'] = client_profile.client_id
-                user_data['client_name'] = client_profile.name
-                print(f"[Login] User {user.user_id} ({user.email}) logged in with client_id: {client_profile.client_id}")
-            except client.DoesNotExist:
-                # AUTO-CREATE CLIENT PROFILE if doesn't exist
-                print(f"[Login] User {user.user_id} ({user.email}) has no client profile - creating one...")
+            # Return profile data based on role
+            if user.role and user.role.lower() == 'coach':
+                from human_coach.models import human_coach
                 try:
-                    client_profile = client.objects.create(
-                        user_id=user,
-                        name=user.name or f"User{user.user_id}",
-                        age=25,  # Default age
-                        gender='Not specified',
-                        email=user.email
-                    )
+                    coach_profile = human_coach.objects.get(user_id=user.user_id)
+                    user_data['coach_id'] = coach_profile.coach_id
+                    user_data['is_approved'] = coach_profile.is_approved
+                    user_data['id'] = coach_profile.coach_id
+                    print(f"[Login] Coach {user.user_id} logged in with coach_id: {coach_profile.coach_id}")
+                except human_coach.DoesNotExist:
+                    user_data['coach_id'] = None
+                    user_data['is_approved'] = False
+                    user_data['id'] = user.user_id
+            else:
+                from client.models import client
+                try:
+                    client_profile = client.objects.get(user_id=user.user_id)
                     user_data['id'] = client_profile.client_id
                     user_data['client_id'] = client_profile.client_id
                     user_data['client_name'] = client_profile.name
-                    print(f"[Login] Auto-created client profile: client_id={client_profile.client_id}")
-                except Exception as e:
-                    print(f"[Login ERROR] Failed to create client profile: {e}")
-                    # Fallback for coaches/admins
-                    user_data['id'] = user.user_id
-                    user_data['client_id'] = None
+                    print(f"[Login] User {user.user_id} ({user.email}) logged in with client_id: {client_profile.client_id}")
+                except client.DoesNotExist:
+                    print(f"[Login] User {user.user_id} ({user.email}) has no client profile - creating one...")
+                    try:
+                        client_profile = client.objects.create(
+                            user_id=user,
+                            name=user.name or f"User{user.user_id}",
+                            age=25,
+                            gender='Not specified',
+                            email=user.email
+                        )
+                        user_data['id'] = client_profile.client_id
+                        user_data['client_id'] = client_profile.client_id
+                        user_data['client_name'] = client_profile.name
+                        print(f"[Login] Auto-created client profile: client_id={client_profile.client_id}")
+                    except Exception as e:
+                        print(f"[Login ERROR] Failed to create client profile: {e}")
+                        user_data['id'] = user.user_id
+                        user_data['client_id'] = None
             
             return Response(user_data, status=status.HTTP_200_OK)
         else:

@@ -113,7 +113,7 @@
 .log-mood-card:hover, .insights-card:hover {
     transform: translateY(-4px) rotateX(2deg);
     box-shadow: var(--shadow-lg);
-}
+
     padding: 25px;
     box-shadow: var(--shadow-soft);
     transition: all 0.3s ease;

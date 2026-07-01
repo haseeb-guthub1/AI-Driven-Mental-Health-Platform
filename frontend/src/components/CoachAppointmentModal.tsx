@@ -17,11 +17,13 @@ interface CoachAppointmentModalProps {
     onClose: () => void;
 }
 
-const MOCK_COACHES: Coach[] = [
-    { coach_id: 1, full_name: 'Dr. Sara Khan',    specialization: 'Anxiety & Depression Specialist',    license_id: 'LIC-2024-001', is_approved: true },
-    { coach_id: 2, full_name: 'Dr. Hassan Mirza', specialization: 'Cognitive Behavioural Therapy (CBT)', license_id: 'LIC-2024-002', is_approved: true },
-    { coach_id: 3, full_name: 'Dr. Amna Rauf',    specialization: 'Stress Management & Work Burnout',   license_id: 'LIC-2024-003', is_approved: true },
-    { coach_id: 4, full_name: 'Dr. Zain Ali',     specialization: 'Trauma & PTSD Recovery',             license_id: 'LIC-2024-004', is_approved: true },
+
+// Fallback: always show these 4 coaches even if the API is down
+const FALLBACK_COACHES: Coach[] = [
+    { coach_id: 18, full_name: 'Dr. Sara Khan',    specialization: 'Anxiety & Depression Specialist',    license_id: 'PSY-AK-2201', is_approved: true },
+    { coach_id: 19, full_name: 'Dr. Hassan Mirza', specialization: 'Cognitive Behavioural Therapy (CBT)', license_id: 'PSY-HM-3302', is_approved: true },
+    { coach_id: 20, full_name: 'Dr. Amna Rauf',    specialization: 'Stress Management & Work Burnout',   license_id: 'PSY-AR-4403', is_approved: true },
+    { coach_id: 21, full_name: 'Dr. Zain Ali',     specialization: 'Trauma & PTSD Recovery',             license_id: 'PSY-ZA-5504', is_approved: true },
 ];
 
 const TIME_SLOTS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
@@ -79,11 +81,14 @@ const CoachAppointmentModal: React.FC<CoachAppointmentModalProps> = ({ isOpen, o
         setIsLoading(true);
         setError(null);
         try {
-            const response = await axios.get('http://127.0.0.1:8000/api/coach-client/available-coaches/');
-            const data = response.data || [];
-            setCoaches(data.length > 0 ? data : MOCK_COACHES);
+            const response = await axios.get('http://127.0.0.1:8000/api/coach_client/available-coaches/');
+            const apiCoaches: Coach[] = response.data || [];
+            // Always keep the 4 dummy coaches, then append any new approved coaches from the API
+            const fallbackIds = new Set(FALLBACK_COACHES.map(c => c.coach_id));
+            const newCoaches = apiCoaches.filter(c => !fallbackIds.has(c.coach_id));
+            setCoaches([...FALLBACK_COACHES, ...newCoaches]);
         } catch {
-            setCoaches(MOCK_COACHES);
+            setCoaches(FALLBACK_COACHES);
         } finally {
             setIsLoading(false);
         }

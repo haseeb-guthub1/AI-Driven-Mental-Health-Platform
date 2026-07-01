@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getCurrentUser } from '../services/authService';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, UserCheck, AlertCircle, MessageSquare,
@@ -170,6 +171,12 @@ const getRiskBg = (risk: string) => {
 };
 
 const Patients: React.FC = () => {
+    const currentUser = getCurrentUser();
+    // Show dummy data only for the 4 built-in demo coaches (Sara Khan, Hassan Mirza, Amna Rauf, Zain Ali)
+    const DEMO_COACH_IDS = [18, 19, 20, 21];
+    const isDemoCoach = DEMO_COACH_IDS.includes(currentUser?.coach_id);
+    const patients = isDemoCoach ? MOCK_PATIENTS : [];
+
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
     const [showMessageModal, setShowMessageModal] = useState(false);
@@ -177,11 +184,11 @@ const Patients: React.FC = () => {
     const [messageText, setMessageText] = useState('');
     const [messageSent, setMessageSent] = useState(false);
 
-    const filteredPatients = MOCK_PATIENTS.filter(p =>
+    const filteredPatients = patients.filter(p =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const highRiskCount = MOCK_PATIENTS.filter(p => p.risk === 'High').length;
+    const highRiskCount = patients.filter(p => p.risk === 'High').length;
 
     const handleMessage = (p: Patient, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -208,7 +215,7 @@ const Patients: React.FC = () => {
                 <div className="stat-tile">
                     <div className="icon-box blue"><UserCheck size={20} /></div>
                     <div className="stat-info">
-                        <h3>{MOCK_PATIENTS.length}</h3>
+                        <h3>{patients.length}</h3>
                         <p>Active Clients</p>
                     </div>
                 </div>
@@ -222,7 +229,7 @@ const Patients: React.FC = () => {
                 <div className="stat-tile">
                     <div className="icon-box green"><TrendingUp size={20} /></div>
                     <div className="stat-info">
-                        <h3>{MOCK_PATIENTS.filter(p => p.status === 'Improving').length}</h3>
+                        <h3>{patients.filter(p => p.status === 'Improving').length}</h3>
                         <p>Improving</p>
                     </div>
                 </div>
@@ -253,6 +260,13 @@ const Patients: React.FC = () => {
                     <span style={{ textAlign: 'right' }}>Actions</span>
                 </div>
 
+                {filteredPatients.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '48px 0', color: '#9CA3AF' }}>
+                        <UserCheck size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
+                        <p style={{ fontSize: '1rem', fontWeight: 600, margin: '0 0 4px' }}>No clients yet</p>
+                        <p style={{ fontSize: '0.85rem', margin: 0 }}>Clients assigned to you will appear here.</p>
+                    </div>
+                )}
                 {filteredPatients.map(patient => (
                     <motion.div
                         key={patient.id}
