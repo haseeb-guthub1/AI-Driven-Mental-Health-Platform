@@ -210,8 +210,8 @@ This project is developed for educational and research purposes.
 
 **Muhammad Haseeb**
 
-- GitHub: https://github.com/your-github-username
-- LinkedIn: https://linkedin.com/in/your-linkedin-profile
+- GitHub: https://github.com/haseeb-guthub1
+- LinkedIn: https://www.linkedin.com/in/haseeb2002/
 
 ---
 
