@@ -45,8 +45,8 @@ def get_ollama_response_generator():
     global _ollama_response_generator
     if _ollama_response_generator is None:
         _ollama_response_generator = OllamaResponseGenerator(
-            model_name="llama3.2:3b",
-            ollama_url="http://localhost:11434"
+            model_name=os.environ.get("OLLAMA_MODEL_NAME", "llama3.2:1b"),
+            ollama_url=os.environ.get("OLLAMA_URL", "http://localhost:11434")
         )
     return _ollama_response_generator
 

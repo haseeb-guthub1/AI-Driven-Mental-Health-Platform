@@ -6,6 +6,12 @@ import sys
 
 def main():
     """Run administrative tasks."""
+    if sys.platform == 'win32':
+        # Windows consoles default to a legacy codepage (cp1252/charmap) that
+        # can't encode the Unicode symbols (✓, ✗, ⚠️, etc.) used in print()
+        # statements throughout the app, which crashes requests with a 500.
+        sys.stdout.reconfigure(encoding='utf-8', errors='backslashreplace')
+        sys.stderr.reconfigure(encoding='utf-8', errors='backslashreplace')
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
     try:
         from django.core.management import execute_from_command_line

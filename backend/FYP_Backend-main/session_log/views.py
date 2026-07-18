@@ -6,7 +6,14 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from .models import session_log
 from .serializers import SessionLogSerializer
-import google.generativeai as genai
+
+try:
+    import google.generativeai as genai
+    GOOGLE_AI_AVAILABLE = True
+except ImportError:
+    genai = None
+    GOOGLE_AI_AVAILABLE = False
+
 from ai_guidance.models import ai_guidance
 from emotion_data.models import emotion_data
 from django.db.models import Avg
@@ -172,15 +179,18 @@ Keep the summary professional, empathetic, and actionable. Format it in clear pa
         summary = None
 
         # --- Attempt 1: Gemini ---
-        try:
-            print(f"[Summary] Trying Gemini API...")
-            genai.configure(api_key="YOUR_GEMINI_API_KEY", transport='rest')
-            gemini_model = genai.GenerativeModel('gemini-2.5-flash-lite')
-            gemini_response = gemini_model.generate_content(summary_prompt)
-            summary = gemini_response.text
-            print(f"[Summary] Gemini succeeded ({len(summary)} chars)")
-        except Exception as gemini_err:
-            print(f"[Summary] Gemini failed: {gemini_err}")
+        if GOOGLE_AI_AVAILABLE and genai is not None:
+            try:
+                print(f"[Summary] Trying Gemini API...")
+                genai.configure(api_key="YOUR_GEMINI_API_KEY", transport='rest')
+                gemini_model = genai.GenerativeModel('gemini-2.5-flash-lite')
+                gemini_response = gemini_model.generate_content(summary_prompt)
+                summary = gemini_response.text
+                print(f"[Summary] Gemini succeeded ({len(summary)} chars)")
+            except Exception as gemini_err:
+                print(f"[Summary] Gemini failed: {gemini_err}")
+        else:
+            print("[Summary] Gemini package not available; skipping Gemini attempt")
 
         # --- Attempt 2: Ollama (local) ---
         if not summary:

@@ -3,6 +3,7 @@ Ollama-Powered AI Coach Response Generator
 Uses local Llama 3.2:3b model for generating empathetic, context-aware responses
 Based on emotion detection from fine-tuned model
 """
+import os
 import requests
 import json
 from typing import Dict, List, Optional
@@ -11,17 +12,19 @@ from typing import Dict, List, Optional
 class OllamaResponseGenerator:
     """Generate AI coach responses using Ollama's local Llama model"""
     
-    def __init__(self, model_name: str = "llama3.2:3b", ollama_url: str = "http://localhost:11434"):
+    def __init__(self, model_name: str | None = None, ollama_url: str | None = None):
         """
         Initialize Ollama Response Generator
         
         Args:
-            model_name: Name of the Ollama model to use (default: llama3.2:3b)
-            ollama_url: Base URL for Ollama API (default: http://localhost:11434)
+            model_name: Name of the Ollama model to use. Falls back to the
+                OLLAMA_MODEL_NAME environment variable, then llama3.2:1b.
+            ollama_url: Base URL for Ollama API. Falls back to the
+                OLLAMA_URL environment variable, then http://localhost:11434.
         """
-        self.model_name = model_name
-        self.ollama_url = ollama_url
-        self.api_endpoint = f"{ollama_url}/api/chat"
+        self.model_name = model_name or os.environ.get("OLLAMA_MODEL_NAME", "llama3.2:1b")
+        self.ollama_url = ollama_url or os.environ.get("OLLAMA_URL", "http://localhost:11434")
+        self.api_endpoint = f"{self.ollama_url}/api/chat"
         
         # Verify Ollama is running
         self._verify_ollama_connection()

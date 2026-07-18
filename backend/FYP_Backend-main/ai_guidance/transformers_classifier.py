@@ -4,8 +4,19 @@ Combines RoBERTa model with contextual understanding (sarcasm, idioms, etc.)
 """
 
 import re
-import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+try:
+    import torch
+    from transformers import AutoTokenizer, AutoModelForSequenceClassification
+    TORCH_AVAILABLE = True
+except (ImportError, OSError):
+    # OSError covers Windows native-DLL load failures (e.g. missing VC++
+    # redistributable), which torch raises instead of ImportError.
+    torch = None
+    AutoTokenizer = None
+    AutoModelForSequenceClassification = None
+    TORCH_AVAILABLE = False
+
 import numpy as np
 
 
@@ -19,15 +30,26 @@ class TransformersEmotionClassifier:
         print("[MODEL] Loading pre-trained transformer model...")
         print(f"[MODEL] Model: {model_name}")
         
-        # Load pre-trained model and tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
-        self.model.eval()  # Set to evaluation mode
-        
-        # Get emotion labels from model config
-        self.emotions = list(self.model.config.id2label.values())
-        print(f"[MODEL] Loaded {len(self.emotions)} emotion categories")
-        print(f"[MODEL] Emotions: {', '.join(self.emotions[:10])}...")
+        if TORCH_AVAILABLE and AutoTokenizer is not None and AutoModelForSequenceClassification is not None:
+            # Load pre-trained model and tokenizer
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+            self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
+            self.model.eval()  # Set to evaluation mode
+            
+            # Get emotion labels from model config
+            self.emotions = list(self.model.config.id2label.values())
+            print(f"[MODEL] Loaded {len(self.emotions)} emotion categories")
+            print(f"[MODEL] Emotions: {', '.join(self.emotions[:10])}...")
+        else:
+            self.tokenizer = None
+            self.model = None
+            self.emotions = [
+                'joy','sadness','anger','fear','love','surprise','disgust','neutral',
+                'curiosity','excitement','nervousness','disappointment','pride','approval',
+                'optimism','relief','embarrassment','annoyance','confusion','desire',
+                'caring','remorse','grief','admiration','gratitude','amusement','realization','disapproval'
+            ]
+            print("[MODEL] Transformer dependencies unavailable; using keyword-based fallback classifier")
         
         # Crisis patterns - semantic understanding, not just keywords
         self.crisis_patterns = {
@@ -417,6 +439,24 @@ class TransformersEmotionClassifier:
         
         original_text = text
         text_normalized = self._normalize_text(text)
+
+        if not TORCH_AVAILABLE or self.model is None:
+            found_keywords = self._extract_emotion_keywords(text_normalized)
+            if found_keywords:
+                top_emotion = max(found_keywords, key=found_keywords.get)
+                confidence = 0.88
+                return {
+                    'emotion': top_emotion,
+                    'confidence': confidence,
+                    'all_scores': {top_emotion: confidence},
+                    'detection_method': 'keyword-fallback'
+                }
+            return {
+                'emotion': 'neutral',
+                'confidence': 0.6,
+                'all_scores': {'neutral': 0.6},
+                'detection_method': 'keyword-fallback'
+            }
         
         # STEP 1: Check for crisis patterns (semantic understanding)
         for category, patterns in self.crisis_patterns.items():

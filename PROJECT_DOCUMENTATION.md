@@ -46,14 +46,14 @@
 ### What the platform does:
 
 - Users log their **emotions and moods** in daily sessions.
-- An **AI system** (custom-trained transformer model + Ollama LLM) analyzes those emotions in real time.
-- The AI generates personalized **therapeutic responses and guidance**.
-- A **risk scoring engine** continuously evaluates how distressed a user is (0–100%).
-- When risk crosses a threshold (≥30%), a **"Professional Support Recommended"** banner appears on the dashboard.
+- An **AI pipeline** — a Hugging Face emotion-classification model layered with a hand-built rule/keyword system, plus a local **Ollama LLM** — analyzes those emotions in real time.
+- The AI generates personalized **therapeutic responses and guidance**, and (optionally, when configured) an **AI-generated session summary via Google Gemini**, with Ollama as an automatic fallback.
+- A **rule-based risk scoring engine** continuously evaluates how distressed a user is and flags **crisis language** (e.g. self-harm phrasing) separately from the emotion/intensity score.
+- Once a client crosses the mandatory-coaching risk threshold, a **"Professional Support Recommended"** banner appears on the dashboard.
 - Users can **book appointments** with licensed human coaches directly through the platform.
 - Coaches see all **pending appointment requests**, can **accept** or **decline** (with a suggested alternative time).
 - Clients receive **real-time notifications** about their booking status.
-- Coaches can view their clients' emotional data, session logs, and risk indicators via the coach dashboard.
+- Coaches can view their clients' emotional data, session logs, and risk indicators via the coach dashboard. The four built-in demo coach accounts show rich mock data for presentation purposes; any other (real) coach account sees only its own live data with proper empty states.
 
 ### Who uses it:
 
@@ -62,6 +62,14 @@
 | **Client (Patient)** | Logs emotions, chats with AI, books coach appointments, reads wellness notifications |
 | **Human Coach** | Reviews pending appointments, accepts/declines bookings, monitors client risk levels, messages clients |
 | **Admin / Superuser** | Approves coach license applications before they can practice on the platform |
+
+### Project status
+
+This is a **development/demo build**, not a production deployment:
+- No Docker/CI/CD config, no `.env`/environment-based secrets management, no `requirements.txt` or `Pipfile` (dependencies currently only exist inside local virtualenvs).
+- `DEBUG = True`, a hardcoded Django `SECRET_KEY`, empty `ALLOWED_HOSTS`, and `CORS_ALLOW_ALL_ORIGINS = True` — all fine for local demos, unsafe as-is for production.
+- Database is a local SQLite file (`db.sqlite3`); passwords are stored in plain text on the `user` model.
+- Several appointment/coach-selection endpoints are intentionally public (`AllowAny`) rather than authenticated, to keep the demo booking flow frictionless.
 
 ---
 
@@ -81,62 +89,89 @@
 | **Lucide React** | 0.562.0 | Icon library |
 | **tsParticles** | 3.9.1 | Animated particle background on the landing/auth page |
 
+No Tailwind CSS — all styling is done with **inline styles** (`style={{ ... }}`) for component-level styling and **per-page CSS files** for global/layout styles.
+
 ### Backend
 
 | Technology | Version | Purpose |
 |---|---|---|
-| **Django** | 6.x | Python web framework |
-| **Django REST Framework (DRF)** | 3.16.1 | RESTful API layer |
+| **Django** | 6.0.2 | Python web framework |
+| **Django REST Framework (DRF)** | 3.16.1 | RESTful API layer (function-based `@api_view` endpoints, not viewsets/routers) |
+| **django-cors-headers** | 4.9.0 | CORS handling for the separate frontend origin |
 | **SQLite** | — | Database (file: `db.sqlite3`) |
-| **Ollama** | — | Local LLM for AI-generated therapeutic responses |
-| **PyTorch / Transformers** | — | Custom fine-tuned BERT emotion classifier |
-| **NumPy** | 2.4.2 | Numerical computations for risk scoring |
-| **HTTPX** | 0.28.1 | Async HTTP client (used when calling Ollama API) |
+| **PyTorch** | 2.10.0 | Tensor runtime backing the emotion classifier |
+| **Transformers (Hugging Face)** | 5.1.0 | Loads `SamLowe/roberta-base-go_emotions`, a public pretrained RoBERTa emotion-classification model, at runtime |
+| **NumPy** | 2.4.2 | Numerical computations for risk scoring / training scripts |
+| **Requests** | 2.32.5 | HTTP client used to call the local Ollama API |
+| **google-generativeai (Gemini)** | 0.8.6 | Optional AI session-summary generation; import is wrapped in a try/except so the app degrades gracefully (falls back to Ollama) if the package or API key isn't available |
+| **Ollama** | — | Local LLM runtime — `llama3.2:1b` for chat/guidance responses (`ai_guidance`), `llama3.2:3b` for the 10-emotion "final assessment" (`emotion_data`) |
+| **pandas / scikit-learn / tqdm** | — | Used only in offline dataset-prep and model-training scripts under `ai_guidance/scripts/`, not by the running server |
 
-### No Tailwind CSS — all styling is done with:
-- **Inline styles** (`style={{ ... }}`) for component-level styling
-- **CSS Modules** (`.css` files per page) for global and layout styles
+**Note on the emotion classifier:** the codebase contains a locally fine-tuned model artifact (`ai_guidance/trained_bert_model/`), but the running code (`ai_guidance/views.py`) currently instantiates `TransformersEmotionClassifier()` with no path override, so it always downloads/uses the public `SamLowe/roberta-base-go_emotions` model rather than the local fine-tuned one. If PyTorch/Transformers aren't importable, classification silently falls back to a rule/keyword-based classifier (`ai_guidance/transformers_classifier.py`), which also carries dedicated logic for crisis phrases, sarcasm, negation, and idioms.
+
+**No dependency manifest exists in-repo** (no `requirements.txt`/`Pipfile`) — installed packages currently live only inside local virtualenvs (`backend/FYP_Backend-main/venv/`).
 
 ---
 
 ## 3. System Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    BROWSER (Client)                  │
-│                                                     │
-│  React 19 + TypeScript + Vite (port 5173)           │
-│  ┌──────────┐  ┌──────────┐  ┌────────────────────┐ │
-│  │  Pages   │  │Components│  │  Services (axios)  │ │
-│  └──────────┘  └──────────┘  └────────────────────┘ │
-│         │              │              │              │
-│         └──────────────┴──────────────┘              │
-│                        │                             │
-│         localStorage (appointments, user, notifs)   │
-└────────────────────────┼─────────────────────────────┘
-                         │ HTTP / REST API
-                         ▼
-┌─────────────────────────────────────────────────────┐
-│             Django REST Framework (port 8000)        │
-│                                                     │
-│  ┌────────┐ ┌────────┐ ┌─────────┐ ┌─────────────┐ │
-│  │  user  │ │ client │ │ session │ │  ai_guidance│ │
-│  └────────┘ └────────┘ └─────────┘ └─────────────┘ │
-│  ┌──────────────┐ ┌──────────┐ ┌──────────────────┐ │
-│  │ human_coach  │ │ emotion  │ │  notification    │ │
-│  └──────────────┘ └──────────┘ └──────────────────┘ │
-│                        │                             │
-│                   SQLite DB (db.sqlite3)              │
-│                        │                             │
-│               ┌────────┴──────────┐                 │
-│               │    AI Pipeline    │                 │
-│               │  BERT Classifier  │                 │
-│               │  + Ollama LLM     │                 │
-│               └───────────────────┘                 │
-└─────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│                          BROWSER (Client)                          │
+│                                                                    │
+│   React 19 + TypeScript + Vite dev server  —  http://localhost:5173│
+│   ┌──────────┐   ┌──────────────┐   ┌────────────────────────┐    │
+│   │  Pages   │   │  Components  │   │  Services (api.ts,     │    │
+│   │ (router) │   │  (modals,    │   │  authService.ts —      │    │
+│   │          │   │  banners)    │   │  Axios HTTP client)    │    │
+│   └────┬─────┘   └──────┬───────┘   └───────────┬────────────┘    │
+│        └────────────────┴────────────────────────┘                 │
+│                             │                                       │
+│   localStorage: "user", "mindwell_appointments",                   │
+│                 "mindwell_notifications" (demo-safe persistence)    │
+└─────────────────────────────┼───────────────────────────────────────┘
+                               │ HTTP / REST (JSON, CORS enabled)
+                               ▼
+┌───────────────────────────────────────────────────────────────────┐
+│               Django + Django REST Framework  —  :8000              │
+│                     (function-based @api_view endpoints)           │
+│                                                                    │
+│  ┌──────┐ ┌────────┐ ┌────────────┐ ┌─────────────┐ ┌───────────┐ │
+│  │ user │ │ client │ │human_coach │ │ coach_client│ │session_log│ │
+│  └──────┘ └────────┘ └────────────┘ └─────────────┘ └───────────┘ │
+│  ┌─────────────┐ ┌──────────────┐ ┌───────────────┐ ┌───────────┐ │
+│  │ emotion_data│ │ ai_guidance  │ │ notification  │ │coach_     │ │
+│  │             │ │              │ │               │ │feedback   │ │
+│  └─────────────┘ └──────┬───────┘ └───────────────┘ └───────────┘ │
+│                         │                        ┌───────────────┐ │
+│                         │                        │upload_resource│ │
+│                         │                        └───────────────┘ │
+│                         ▼                                          │
+│              ┌─────────────────────────────┐                       │
+│              │           AI Pipeline         │                      │
+│              │  1. transformers_classifier   │  RoBERTa (HF Hub)    │
+│              │     — go_emotions model, +    │  or rule-based       │
+│              │     rule-based crisis/sarcasm/│  fallback if torch/  │
+│              │     negation layer            │  transformers absent │
+│              │  2. sarcasm_detector          │                      │
+│              │  3. risk_assessment_service    │  rule-based scoring  │
+│              │     (decision-tree, not a      │  + mandatory-coach   │
+│              │     weighted 0-100 formula)    │  lock logic          │
+│              │  4. ollama_response_generator  │→ Ollama :11434       │
+│              │     + ollama_emotion_analyzer   │  (llama3.2:1b / 3b)  │
+│              │  5. Gemini summary (optional,  │→ Google Generative   │
+│              │     falls back to Ollama)      │  AI API              │
+│              └─────────────────────────────┘                       │
+│                         │                                          │
+│                         ▼                                          │
+│                 SQLite DB (db.sqlite3)                              │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
-**Key design decision:** Because this is a demonstration/FYP project, all appointment bookings and coach notifications are saved to **browser localStorage** regardless of whether the backend API succeeds. This ensures the demo always works even if the backend is unavailable or the client ID mapping fails.
+**Key design decisions:**
+- Because this is a demonstration/FYP project, all appointment bookings and coach notifications are saved to **browser localStorage** regardless of whether the backend API succeeds. This ensures the demo always works even if the backend is unavailable or the client ID mapping fails. Coach booking now also round-trips through the real `coach_client` API when it's reachable, merging live coach data with a fixed set of fallback/demo coaches instead of relying on mocks alone.
+- The AI pipeline is intentionally layered with fallbacks at every step (classifier → rule-based backup, Gemini summary → Ollama backup) so the app keeps functioning even if a given model/service is unavailable in the demo environment.
+- Coach-facing pages (`CoachDashboard`, `Patients`, `SessionLogs`) distinguish the four seeded demo coach accounts from any other coach account, showing rich mock stats/activity only for the demo IDs and honest empty states for real accounts.
 
 ---
 
